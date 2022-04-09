@@ -3,7 +3,7 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    TG_TOKEN: str
+    TG_TOKEN: str = ""
     DATABASE_URL: str = "sqlite:///app.db"
 
 

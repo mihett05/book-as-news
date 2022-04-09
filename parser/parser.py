@@ -97,18 +97,15 @@ class Parser:
         notes = dict()
         number = 0
         found = False
-        for i, el in enumerate(fns.children):
-            if el.name == "div":
-                try:
-                    number = int(el.select_one("span").select_one("sup").select_one("a").text.strip())
-                    found = True
-                except AttributeError:
-                    pass
-            elif el.name == "span" and el.get("class")[0] == "p" and found:
-                notes[number] = el.text
-                found = False
+        if fns:
+            for i, el in enumerate(fns.children):
+                if el.name == "div":
+                    try:
+                        number = int(el.select_one("span").select_one("sup").select_one("a").text.strip())
+                        found = True
+                    except AttributeError:
+                        pass
+                elif el.name == "span" and el.get("class")[0] == "p" and found:
+                    notes[number] = el.text
+                    found = False
         return notes
-
-
-
-

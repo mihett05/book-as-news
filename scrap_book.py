@@ -1,8 +1,5 @@
-from parser.parser import Parser
+from parser.parser_to_db import parse_and_add_to_db
 
 
 if __name__ == '__main__':
-    p = Parser("https://ilibrary.ru/text/11/index.html")
-    contents = p.parse_table_of_content()
-    print(p.parse_chapter(contents[0].url))
-
+    parse_and_add_to_db("https://ilibrary.ru/text/11/index.html")
