@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from core.models import Paragraph
-from core.database import SessionLocal
+from core.database import create_db
 
 from .element import ElementType
 from .parser import Parser
@@ -13,7 +13,7 @@ def parse_and_add_to_db(root_url: str):
     current_volume = ""
     current_part = ""
 
-    db: Session = SessionLocal()
+    db = create_db()
 
     for element in table:
         if element.element_type == ElementType.volume:
