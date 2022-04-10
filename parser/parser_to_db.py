@@ -1,9 +1,7 @@
-from sqlalchemy.orm import Session
-
 from core.models import Paragraph
 from core.database import create_db
 
-from .element import ElementType
+from parser.schemes.element import ElementType
 from .parser import Parser
 
 

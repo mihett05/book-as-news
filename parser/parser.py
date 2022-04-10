@@ -4,8 +4,8 @@ from urllib.parse import urlparse, urlunparse
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from .element import Element, ElementType
-from .paragraph import Paragraph
+from parser.schemes.element import Element, ElementType
+from parser.schemes.paragraph import Paragraph
 
 
 class Parser:

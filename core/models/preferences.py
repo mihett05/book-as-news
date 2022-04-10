@@ -1,5 +1,5 @@
 import re
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, Boolean
 from sqlalchemy.orm import Session
 from aiogram.types import Message
 from core.database import Base, create_db
@@ -26,7 +26,9 @@ class Preferences(Base):
     start_time = Column(Integer, default=60 * 60 * (12 - 5))  # utc
     end_time = Column(Integer, default=60 * 60 * (20 - 5))  # utc
     timezone = Column(Integer, default=60 * 60 * 5)
-    last_sent = Column(Integer, default=0)
+    last_sent_time = Column(Integer, default=0)
+    last_sent_id = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
 
     @classmethod
     def get_or_create(cls, db: Session, user_id: int) -> "Preferences":
@@ -76,7 +78,6 @@ class Preferences(Base):
             return error
 
         if key == "paragraphs_count":
-            print(value)
             self.paragraphs_count = value
         elif key == "delay":
             setattr(self, key, value * 60 * 60)
@@ -86,7 +87,6 @@ class Preferences(Base):
             self.start_time -= diff
             self.end_time -= diff
         elif key in ["start_time", "end_time"]:
-            print("time")
             setattr(self, key, value * 60 * 60 - self.timezone)
 
 
@@ -94,13 +94,3 @@ def get_prefs(msg: Message) -> (Session, Preferences):
     db = create_db()
     prefs = Preferences.get_or_create(db, msg.from_user.id)
     return db, prefs
-
-
-def pref_handler(func):
-    async def wrapper(message: Message, regexp_command: re.Match):
-        arg = int(regexp_command.group(1))
-        db, prefs = get_prefs(message)
-        if await func(message, arg, db, prefs):
-            db.commit()
-            await message.answer(prefs.get_message())
-    return wrapper
