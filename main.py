@@ -2,11 +2,10 @@ import os
 import re
 import asyncio
 from aiogram import Bot, Dispatcher, executor, types, filters, middlewares
-from sqlalchemy.orm import Session
 
 
-from core.database import Base, engine, create_db
-from core.models import Paragraph, Preferences
+from core.database import Base, engine
+from core.models import Preferences
 from core.models.preferences import get_prefs
 from scheduler import Scheduler
 
