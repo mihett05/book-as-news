@@ -1,9 +1,10 @@
 import re
+from datetime import timedelta
 from aiogram import Dispatcher, types, filters
 
 
 from core.models import Preferences
-from core.utils import send_settings, update_settings
+from core.utils import get_prefs, send_settings, update_settings
 from core.keyboard import keyboard
 from scheduler import Scheduler
 
@@ -14,9 +15,21 @@ async def start_handler(message: types.Message):
 
 
 async def next_time(message: types.Message):
-    user_id = message.from_user.id
+    db, prefs = get_prefs(message)
     scheduler = Scheduler.get_current_scheduler()
-    await message.answer(scheduler.get_next_time_for_user(user_id).isoformat())
+    utc_next = scheduler.get_next_time_for_user(prefs.user_id)
+    await message.answer((utc_next + timedelta(hours=prefs.get_time(prefs.timezone))).isoformat())
+
+
+async def get_more_paragraph(message: types.Message):
+    db, prefs = get_prefs(message)
+    scheduler = Scheduler.get_current_scheduler()
+    paragraphs = scheduler.get_next_paragraphs(prefs, count=1)
+    if not paragraphs:
+        await scheduler.remove_user(prefs)
+    else:
+        await scheduler.send_next_paragraphs(prefs, paragraphs)
+    db.commit()
 
 
 def create_pref_handler(dp: Dispatcher, key: str):
@@ -35,9 +48,14 @@ def create_pref_handler(dp: Dispatcher, key: str):
 
 def init_commands(dp: Dispatcher):
     dp.register_message_handler(start_handler, filters.CommandStart())
-    dp.register_message_handler(send_settings, lambda msg: "настройки" in msg.text.lower())
+    dp.register_message_handler(send_settings, lambda msg: "настройки" in msg.text.strip().lower())
     dp.register_message_handler(send_settings, commands=["settings"])
+
+    dp.register_message_handler(next_time, lambda msg: "следующее время отправки" in msg.text.strip().lower())
     dp.register_message_handler(next_time, commands=["next_time"])
+
+    dp.register_message_handler(get_more_paragraph, lambda msg: "отправить ещё абзац" in msg.text.strip().lower())
+    dp.register_message_handler(get_more_paragraph, commands=["next_pg"])
 
     for field in Preferences.fields:
         create_pref_handler(dp, field)

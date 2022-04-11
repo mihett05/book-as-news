@@ -32,14 +32,39 @@ class Scheduler:
     def add_new_user(self, prefs: Preferences):
         self.analyzer.update_time_for_user(prefs)
 
+    async def remove_user(self, prefs: Preferences):
+        await self.bot.send_message(prefs.user_id, "Конец книги", parse_mode="Markdown")
+        self.analyzer.remove_user(prefs)
+
     def update_preferences(self, prefs: Preferences):
         self.analyzer.update_time_for_user(prefs)
 
-    def get_next_paragraph(self, prefs: Preferences) -> List[Paragraph]:
+    def get_next_paragraphs(self, prefs: Preferences, count: int = None) -> List[Paragraph]:
+        count = count or prefs.paragraphs_count
         return self.analyzer.db.query(Paragraph)\
             .filter(Paragraph.id >= prefs.last_sent_id + 1)\
-            .filter(Paragraph.id <= prefs.last_sent_id + prefs.paragraphs_count)\
+            .filter(Paragraph.id <= prefs.last_sent_id + count)\
             .all()
+
+    async def send_next_paragraphs(self, prefs: Preferences, paragraphs: List[Paragraph]):
+        for paragraph in paragraphs:
+            path = "".join([
+                paragraph.volume,
+                ". " if paragraph.volume else "",
+                paragraph.part,
+                ". " if paragraph.part else "",
+                paragraph.chapter,
+                "\n\n"
+            ])
+            await self.bot.send_message(
+                prefs.user_id,
+                path + paragraph.content + "\n\n" + paragraph.notes,
+                parse_mode="Markdown"
+            )
+        prefs.last_sent_time = int(datetime.utcnow().timestamp())
+        prefs.last_sent_id = paragraphs[-1].id
+        self.analyzer.db.commit()
+        self.update_preferences(prefs)
 
     async def schedule(self):
         while True:
@@ -51,29 +76,18 @@ class Scheduler:
                datetime.utcnow().replace(microsecond=0)
             )
 
-            paragraphs = self.get_next_paragraph(prefs)
+            paragraphs = self.get_next_paragraphs(prefs)
             if not paragraphs:
-                await self.bot.send_message(prefs.user_id, "Конец книги", parse_mode="Markdown")
-                self.analyzer.remove_user(prefs)
+                await self.remove_user(prefs)
                 continue
 
             if time_to_wait.total_seconds() > 0:
                 await asyncio.sleep(time_to_wait.seconds)
-            for paragraph in paragraphs:
-                path = "".join([
-                    paragraph.volume,
-                    ". " if paragraph.volume else "",
-                    paragraph.part,
-                    ". " if paragraph.part else "",
-                    paragraph.chapter,
-                    "\n\n"
-                ])
-                await self.bot.send_message(
-                    next_user_id,
-                    path + paragraph.content + "\n\n" + paragraph.notes,
-                    parse_mode="Markdown"
-                )
-            prefs.last_sent_time = int(datetime.utcnow().timestamp())
-            prefs.last_sent_id = paragraphs[-1].id
-            self.analyzer.db.commit()
-            self.update_preferences(prefs)
+
+            if prefs.last_sent_id != paragraphs[0].id - 1:
+                paragraphs = self.get_next_paragraphs(prefs)
+                if not paragraphs:
+                    await self.remove_user(prefs)
+                    continue
+
+            await self.send_next_paragraphs(prefs, paragraphs)
