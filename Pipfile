@@ -14,7 +14,7 @@ bs4 = "*"
 [dev-packages]
 
 [requires]
-python_version = "3.10"
+python_version = "3"
 
 [scripts]
 create-migrations = "alembic revision --autogenerate"  # run as `pipenv run create-migrations -m "migration name"`
