@@ -1,15 +1,29 @@
 import asyncio
 from datetime import datetime
-from typing import List
+from typing import List, Union
 from aiogram import Bot
 from core.models import Preferences, Paragraph
 from .analyzer import Analyzer
 
 
 class Scheduler:
-    def __init__(self, bot: Bot):
+    _instance = None
+    bot: Bot
+
+    def __init__(self):
         self.analyzer = Analyzer()
         self.analyzer.generate_schedule()
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(Scheduler, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    @classmethod
+    def get_current_scheduler(cls) -> "Scheduler":
+        return cls._instance
+
+    def set_bot(self, bot: Bot):
         self.bot = bot
 
     def get_next_time_for_user(self, user_id: int) -> datetime:
@@ -39,7 +53,7 @@ class Scheduler:
 
             paragraphs = self.get_next_paragraph(prefs)
             if not paragraphs:
-                await self.bot.send_message(prefs.user_id, "Конец книги")
+                await self.bot.send_message(prefs.user_id, "Конец книги", parse_mode="Markdown")
                 self.analyzer.remove_user(prefs)
                 continue
 
@@ -54,7 +68,11 @@ class Scheduler:
                     paragraph.chapter,
                     "\n\n"
                 ])
-                await self.bot.send_message(next_user_id, path + paragraph.content + "\n\n" + paragraph.notes)
+                await self.bot.send_message(
+                    next_user_id,
+                    path + paragraph.content + "\n\n" + paragraph.notes,
+                    parse_mode="Markdown"
+                )
             prefs.last_sent_time = int(datetime.utcnow().timestamp())
             prefs.last_sent_id = paragraphs[-1].id
             self.analyzer.db.commit()

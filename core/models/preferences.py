@@ -29,6 +29,7 @@ class Preferences(Base):
     last_sent_time = Column(Integer, default=0)
     last_sent_id = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
+    settings_message_id = Column(Integer, default=0)
 
     @classmethod
     def get_or_create(cls, db: Session, user_id: int) -> "Preferences":
@@ -88,9 +89,3 @@ class Preferences(Base):
             self.end_time -= diff
         elif key in ["start_time", "end_time"]:
             setattr(self, key, value * 60 * 60 - self.timezone)
-
-
-def get_prefs(msg: Message) -> (Session, Preferences):
-    db = create_db()
-    prefs = Preferences.get_or_create(db, msg.from_user.id)
-    return db, prefs
