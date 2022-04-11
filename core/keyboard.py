@@ -4,7 +4,7 @@ from core.models.preferences import Preferences
 
 keyboard = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
 keyboard.row(KeyboardButton("⚙️ Настройки"))
-keyboard.row(KeyboardButton("⏱️ Следующее время отправки"), KeyboardButton("⏭️ Отправить ещё абзац"))
+keyboard.row(KeyboardButton("⏭️ Отправить ещё абзац"), KeyboardButton("⏱️ Следующее время отправки"))
 
 settings_keyboard = InlineKeyboardMarkup(row_width=3)
 set_pg_count_button = InlineKeyboardButton("Кол-во абзацев", callback_data="paragraphs_count")

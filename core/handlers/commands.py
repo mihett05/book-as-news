@@ -11,7 +11,6 @@ from scheduler import Scheduler
 
 async def start_handler(message: types.Message):
     await message.answer("Нажми на кнопки снизу", parse_mode="Markdown", reply_markup=keyboard)
-    await send_settings(message)
 
 
 async def next_time(message: types.Message):
@@ -30,6 +29,15 @@ async def get_more_paragraph(message: types.Message):
     else:
         await scheduler.send_next_paragraphs(prefs, paragraphs)
     db.commit()
+
+
+async def clear(message: types.Message):
+    db, prefs = get_prefs(message)
+    scheduler = Scheduler.get_current_scheduler()
+    prefs.last_sent_id = 0
+    db.commit()
+    scheduler.add_new_user(prefs)
+    await message.answer("Прочтение начато с начала")
 
 
 def create_pref_handler(dp: Dispatcher, key: str):
@@ -56,6 +64,8 @@ def init_commands(dp: Dispatcher):
 
     dp.register_message_handler(get_more_paragraph, lambda msg: "отправить ещё абзац" in msg.text.strip().lower())
     dp.register_message_handler(get_more_paragraph, commands=["next_pg"])
+
+    dp.register_message_handler(clear, commands=["clear"])
 
     for field in Preferences.fields:
         create_pref_handler(dp, field)
